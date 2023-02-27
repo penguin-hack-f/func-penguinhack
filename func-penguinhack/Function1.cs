@@ -149,24 +149,5 @@ namespace func_penguinhack
             await tableClient.UpdateEntityAsync(entity, ETag.All, TableUpdateMode.Replace);
             return new OkObjectResult(entity);
         }
-
-        [OpenApiOperation(operationId: "Run", tags: new[] { "Todo" })]
-        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
-        [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(TodoPayload), Description = "The **Json** parameter")]
-        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
-        [FunctionName("TodoDelete")]
-        public static async Task<IActionResult> TodoDeleteRun(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequest req,
-            [Table("Todos", Connection = "MyStorage")] TableClient tableClient,
-            ILogger log)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            TodoPayload payload = TodoPayload.ConvertTo(requestBody);
-
-            string words = payload.UserId + "-" + $"{payload.TaskNumber}";
-            await tableClient.DeleteEntityAsync(payload.UserId, words, ETag.All);
-            return new OkObjectResult(payload);
-        }
     }
 }
