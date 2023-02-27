@@ -1,6 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Core;
+using Azure.Data.Tables;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -10,9 +17,11 @@ using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using TableAttribute = Microsoft.Azure.WebJobs.TableAttribute;
 
 namespace func_penguinhack
 {
+
     public class Function1
     {
         private readonly ILogger<Function1> _logger;
@@ -44,6 +53,66 @@ namespace func_penguinhack
 
             return new OkObjectResult(responseMessage);
         }
+
+        [OpenApiOperation(operationId: "Run", tags: new[] { "Todo" })]
+        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(TodoPayload), Description = "The **Json** parameter")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
+        [FunctionName("TodoPost")]
+        public static async Task<IActionResult> TaskPosttRun(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            [Table("Todos", Connection = "MyStorage")] TableClient tableClient,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            TodoPayload payload = TodoPayload.ConvertTo(requestBody);
+            Console.WriteLine(payload);
+
+            var todoEntity = new TodoEntity()
+            {
+                PartitionKey = payload.UserId,
+                RowKey = payload.UserId,
+                UserId = payload.UserId,
+                Difficulty = payload.Difficulty,
+                Motivation = payload.Motivation,
+                Category = payload.Category,
+                Task = payload.Task,
+                TaskNumber = payload.TaskNumber,
+            };
+
+            await tableClient.AddEntityAsync(todoEntity);
+            return new OkObjectResult(todoEntity);
+        }
+
+        [OpenApiOperation(operationId: "Run", tags: new[] { "Todo" })]
+        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        [OpenApiParameter(name: "userId", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **userId** parameter")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
+        [FunctionName("TodoGet")]
+        public static async Task<IActionResult> TaskGetRun(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            [Table("Todos", Connection = "MyStorage")] TableClient tableClient,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            string key = req.Query["userId"];
+            Console.WriteLine(key);
+            AsyncPageable<TodoEntity> queryResults = tableClient.QueryAsync<TodoEntity>(filter: $"PartitionKey eq '{key}'");
+            Console.WriteLine(queryResults);
+            var todos = new List<TodoEntity>();
+            await foreach (TodoEntity entity in queryResults)
+            {
+                log.LogInformation($"{entity.PartitionKey}\t{entity.RowKey}\t{entity.Task}\t");
+                todos.Add(entity);
+            }
+
+            var responseData = new Todo()
+            {
+                Todos = todos
+            };
+
+            return new OkObjectResult(responseData);
+        }
     }
 }
-
