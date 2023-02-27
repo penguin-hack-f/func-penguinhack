@@ -17,9 +17,9 @@ namespace func_penguinhack
         public string UserId { get; set; }
         public string Difficulty { get; set; }
         public string Motivation { get; set; }
-        public string Weather { get; set; }
         public string Category { get; set; }
-        public string Task { get; set; }
+        public bool Display { get; set; }
+        public string Content { get; set; }
         public int TaskNumber { get; set; }
         DateTimeOffset? ITableEntity.Timestamp { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         ETag ITableEntity.ETag { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

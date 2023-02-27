@@ -28,8 +28,11 @@ namespace func_penguinhack
         [JsonPropertyName("category")]
         public string Category { get; set; }
 
+        [JsonPropertyName("display")]
+        public bool Display { get; set; }
+
         [JsonPropertyName("task")]
-        public string Task { get; set; }
+        public string Content { get; set; }
 
         [JsonPropertyName("taskNumber")]
         public int TaskNumber { get; set; }
@@ -56,8 +59,9 @@ namespace func_penguinhack
                          Difficulty = "Easy",
                          Motivation = "Fun",
                          Category = "Fun",
-                         Task = "Do something fun",
-                         TaskNumber = 1
+                         Display = true,
+                         Content = "Do something fun",
+                         TaskNumber = 0
                      },
                      namingStrategy
                  ));
